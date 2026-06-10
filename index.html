@@ -1,0 +1,119 @@
+<!DOCTYPE html> <html lang="zh-CN"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>🎹 钢琴小伙伴 - AI陪练助手</title> <link rel="stylesheet" href="css/style.css"> </head> <body> <div id="app"> <!-- 顶部导航 --> <header class="header"> <div class="logo">🎹 钢琴小伙伴</div> <div class="stars" id="stars">⭐ <span id="star-count">0</span></div> </header>
+    <!-- 主页面 -->
+    <main id="main-content">
+        <!-- 欢迎页 -->
+        <section id="page-home" class="page active">
+            <div class="mascot">🐻</div>
+            <h1>你好呀，小钢琴家！</h1>
+            <p class="subtitle">今天想练什么曲子呢？</p>
+            <div class="song-list" id="song-list">
+                <!-- 动态生成曲目列表 -->
+            </div>
+        </section>
+
+        <!-- 练习页 -->
+        <section id="page-practice" class="page">
+            <div class="practice-header">
+                <button class="btn-back" id="btn-back">← 返回</button>
+                <h2 id="song-title"></h2>
+                <div class="tempo-display">🎵 <span id="tempo-value">80</span> BPM</div>
+            </div>
+
+            <!-- 乐谱显示区 -->
+            <div class="sheet-music" id="sheet-music">
+                <canvas id="score-canvas" width="800" height="200"></canvas>
+            </div>
+
+            <!-- 实时反馈区 -->
+            <div class="feedback-area">
+                <div class="detected-note">
+                    <span class="label">你弹的音：</span>
+                    <span class="note-display" id="detected-note">--</span>
+                </div>
+                <div class="expected-note">
+                    <span class="label">应该弹：</span>
+                    <span class="note-display" id="expected-note">--</span>
+                </div>
+                <div class="feedback-icon" id="feedback-icon">🎵</div>
+            </div>
+
+            <!-- 进度条 -->
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+
+            <!-- 控制按钮 -->
+            <div class="controls">
+                <button class="btn btn-demo" id="btn-demo">👂 听一听</button>
+                <button class="btn btn-start" id="btn-start">🎤 开始练习</button>
+                <button class="btn btn-stop" id="btn-stop" style="display:none">⏹ 停止</button>
+            </div>
+
+            <!-- AI助手对话 -->
+            <div class="ai-chat" id="ai-chat">
+                <div class="chat-bubble" id="chat-bubble">
+                    <span class="chat-avatar">🐻</span>
+                    <span class="chat-text" id="chat-text">准备好了吗？点击"开始练习"试试吧！</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 报告页 -->
+        <section id="page-report" class="page">
+            <div class="report-card">
+                <h2>🎉 练习完成！</h2>
+                <div class="report-mascot" id="report-mascot">🐻</div>
+                <div class="report-score">
+                    <div class="score-circle" id="score-circle">
+                        <span class="score-number" id="score-number">0</span>
+                        <span class="score-label">分</span>
+                    </div>
+                </div>
+                <div class="report-details">
+                    <div class="detail-item">
+                        <span class="detail-icon">🎯</span>
+                        <span class="detail-label">音准</span>
+                        <span class="detail-value" id="report-pitch">--</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">⏱️</span>
+                        <span class="detail-label">节奏</span>
+                        <span class="detail-value" id="report-rhythm">--</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">✅</span>
+                        <span class="detail-label">正确音符</span>
+                        <span class="detail-value" id="report-correct">--</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-icon">❌</span>
+                        <span class="detail-label">错误音符</span>
+                        <span class="detail-value" id="report-wrong">--</span>
+                    </div>
+                </div>
+                <div class="report-message" id="report-message"></div>
+                <div class="report-buttons">
+                    <button class="btn btn-retry" id="btn-retry">🔄 再练一次</button>
+                    <button class="btn btn-home" id="btn-home">🏠 回到首页</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 麦克风权限提示 -->
+    <div class="modal" id="mic-modal" style="display:none">
+        <div class="modal-content">
+            <h3>🎤 需要麦克风权限</h3>
+            <p>为了听到你弹琴的声音，需要开启麦克风哦！</p>
+            <button class="btn btn-start" id="btn-allow-mic">好的，开启！</button>
+        </div>
+    </div>
+</div>
+
+<script src="js/music.js"></script>
+<script src="js/songs.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/score.js"></script>
+<script src="js/app.js"></script>
+</body> </html>
