@@ -1,0 +1,529 @@
+
+/* ============================================
+钢琴小伙伴 - 儿童友好UI样式
+============================================ */
+
+:root {
+--primary: #FF6B6B;
+--secondary: #4ECDC4;
+--accent: #FFE66D;
+--success: #51CF66;
+--error: #FF6B6B;
+--bg: #FFF9F0;
+--text: #2D3436;
+--text-light: #636E72;
+--card-bg: #FFFFFF;
+--shadow: 0 4px 15px rgba(0,0,0,0.1);
+--radius: 20px;
+}
+
+{
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+
+body {
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+background: var(--bg);
+color: var(--text);
+min-height: 100vh;
+overflow-x: hidden;
+}
+
+/* Header */
+.header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 16px 24px;
+background: white;
+box-shadow: var(--shadow);
+position: sticky;
+top: 0;
+z-index: 100;
+}
+
+.logo {
+font-size: 1.5rem;
+font-weight: 700;
+color: var(--primary);
+}
+
+.stars {
+font-size: 1.2rem;
+background: var(--accent);
+padding: 8px 16px;
+border-radius: 20px;
+font-weight: 600;
+}
+
+/* Pages */
+.page {
+display: none;
+padding: 24px;
+max-width: 900px;
+margin: 0 auto;
+animation: fadeIn 0.3s ease;
+}
+
+.page.active {
+display: block;
+}
+
+@keyframes fadeIn {
+from { opacity: 0; transform: translateY(10px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+/* Home Page */
+.mascot {
+font-size: 5rem;
+text-align: center;
+margin: 20px 0;
+animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+0%, 100% { transform: translateY(0); }
+50% { transform: translateY(-10px); }
+}
+
+h1 {
+text-align: center;
+font-size: 2rem;
+color: var(--text);
+margin-bottom: 8px;
+}
+
+.subtitle {
+text-align: center;
+color: var(--text-light);
+font-size: 1.1rem;
+margin-bottom: 30px;
+}
+
+/* Song List */
+.song-list {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+gap: 16px;
+}
+
+.song-card {
+background: var(--card-bg);
+border-radius: var(--radius);
+padding: 20px;
+box-shadow: var(--shadow);
+cursor: pointer;
+transition: transform 0.2s, box-shadow 0.2s;
+border: 3px solid transparent;
+}
+
+.song-card:hover {
+transform: translateY(-4px);
+box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+border-color: var(--secondary);
+}
+
+.song-card:focus {
+outline: 3px solid var(--secondary);
+outline-offset: 2px;
+}
+
+.song-card .song-emoji {
+font-size: 2.5rem;
+margin-bottom: 10px;
+}
+
+.song-card .song-name {
+font-size: 1.2rem;
+font-weight: 600;
+margin-bottom: 4px;
+}
+
+.song-card .song-difficulty {
+font-size: 0.9rem;
+color: var(--text-light);
+}
+
+.difficulty-stars {
+color: var(--accent);
+}
+
+/* Practice Page */
+.practice-header {
+display: flex;
+align-items: center;
+gap: 16px;
+margin-bottom: 20px;
+flex-wrap: wrap;
+}
+
+.practice-header h2 {
+flex: 1;
+font-size: 1.4rem;
+}
+
+.tempo-display {
+background: var(--accent);
+padding: 6px 14px;
+border-radius: 12px;
+font-weight: 600;
+font-size: 0.9rem;
+}
+
+.btn-back {
+background: none;
+border: none;
+font-size: 1.1rem;
+cursor: pointer;
+color: var(--text-light);
+padding: 8px;
+border-radius: 8px;
+}
+
+.btn-back:hover {
+background: #f0f0f0;
+}
+
+/* Sheet Music */
+.sheet-music {
+background: white;
+border-radius: var(--radius);
+padding: 20px;
+box-shadow: var(--shadow);
+margin-bottom: 20px;
+overflow-x: auto;
+}
+
+#score-canvas {
+width: 100%;
+height: 200px;
+}
+
+/* Feedback Area */
+.feedback-area {
+display: flex;
+justify-content: center;
+align-items: center;
+gap: 30px;
+margin: 20px 0;
+flex-wrap: wrap;
+}
+
+.detected-note, .expected-note {
+text-align: center;
+}
+
+.label {
+display: block;
+font-size: 0.85rem;
+color: var(--text-light);
+margin-bottom: 4px;
+}
+
+.note-display {
+font-size: 2.5rem;
+font-weight: 700;
+display: block;
+}
+
+.detected-note .note-display {
+color: var(--secondary);
+}
+
+.expected-note .note-display {
+color: var(--primary);
+}
+
+.feedback-icon {
+font-size: 3rem;
+transition: transform 0.2s;
+}
+
+.feedback-icon.correct {
+animation: pop 0.3s ease;
+}
+
+.feedback-icon.wrong {
+animation: shake 0.3s ease;
+}
+
+@keyframes pop {
+0% { transform: scale(1); }
+50% { transform: scale(1.3); }
+100% { transform: scale(1); }
+}
+
+@keyframes shake {
+0%, 100% { transform: translateX(0); }
+25% { transform: translateX(-5px); }
+75% { transform: translateX(5px); }
+}
+
+/* Progress Bar */
+.progress-bar {
+width: 100%;
+height: 12px;
+background: #E0E0E0;
+border-radius: 6px;
+margin: 16px 0;
+overflow: hidden;
+}
+
+.progress-fill {
+height: 100%;
+background: linear-gradient(90deg, var(--secondary), var(--success));
+border-radius: 6px;
+transition: width 0.3s ease;
+width: 0%;
+}
+
+/* Controls */
+.controls {
+display: flex;
+justify-content: center;
+gap: 16px;
+margin: 20px 0;
+flex-wrap: wrap;
+}
+
+.btn {
+padding: 14px 28px;
+border: none;
+border-radius: 30px;
+font-size: 1.1rem;
+font-weight: 600;
+cursor: pointer;
+transition: transform 0.2s, box-shadow 0.2s;
+box-shadow: var(--shadow);
+}
+
+.btn:hover {
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.btn:active {
+transform: translateY(0);
+}
+
+.btn:focus {
+outline: 3px solid var(--secondary);
+outline-offset: 2px;
+}
+
+.btn-start {
+background: var(--success);
+color: white;
+}
+
+.btn-stop {
+background: var(--error);
+color: white;
+}
+
+.btn-demo {
+background: var(--secondary);
+color: white;
+}
+
+.btn-retry {
+background: var(--secondary);
+color: white;
+}
+
+.btn-home {
+background: var(--accent);
+color: var(--text);
+}
+
+/* AI Chat */
+.ai-chat {
+margin-top: 20px;
+}
+
+.chat-bubble {
+display: flex;
+align-items: flex-start;
+gap: 12px;
+background: white;
+padding: 16px 20px;
+border-radius: var(--radius);
+box-shadow: var(--shadow);
+animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+from { opacity: 0; transform: translateY(10px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-avatar {
+font-size: 2rem;
+flex-shrink: 0;
+}
+
+.chat-text {
+font-size: 1rem;
+line-height: 1.5;
+color: var(--text);
+padding-top: 6px;
+}
+
+/* Report Page */
+.report-card {
+background: white;
+border-radius: var(--radius);
+padding: 40px 30px;
+box-shadow: var(--shadow);
+text-align: center;
+max-width: 500px;
+margin: 0 auto;
+}
+
+.report-mascot {
+font-size: 4rem;
+margin: 10px 0;
+}
+
+.score-circle {
+width: 120px;
+height: 120px;
+border-radius: 50%;
+background: linear-gradient(135deg, var(--secondary), var(--success));
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+margin: 20px auto;
+color: white;
+box-shadow: 0 4px 20px rgba(78, 205, 196, 0.4);
+}
+
+.score-number {
+font-size: 2.5rem;
+font-weight: 700;
+}
+
+.score-label {
+font-size: 0.9rem;
+opacity: 0.9;
+}
+
+.report-details {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 12px;
+margin: 24px 0;
+}
+
+.detail-item {
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 12px;
+background: var(--bg);
+border-radius: 12px;
+}
+
+.detail-icon {
+font-size: 1.5rem;
+margin-bottom: 4px;
+}
+
+.detail-label {
+font-size: 0.8rem;
+color: var(--text-light);
+}
+
+.detail-value {
+font-size: 1.2rem;
+font-weight: 600;
+}
+
+.report-message {
+font-size: 1.1rem;
+color: var(--text);
+margin: 16px 0;
+padding: 12px;
+background: var(--bg);
+border-radius: 12px;
+}
+
+.report-buttons {
+display: flex;
+justify-content: center;
+gap: 12px;
+margin-top: 20px;
+flex-wrap: wrap;
+}
+
+/* Modal */
+.modal {
+position: fixed;
+inset: 0;
+background: rgba(0,0,0,0.5);
+display: flex;
+justify-content: center;
+align-items: center;
+z-index: 1000;
+}
+
+.modal-content {
+background: white;
+border-radius: var(--radius);
+padding: 40px;
+text-align: center;
+max-width: 400px;
+box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-content h3 {
+margin-bottom: 12px;
+font-size: 1.4rem;
+}
+
+.modal-content p {
+margin-bottom: 20px;
+color: var(--text-light);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+.header {
+padding: 12px 16px;
+}
+.page {
+    padding: 16px;
+}
+
+h1 {
+    font-size: 1.5rem;
+}
+
+.song-list {
+    grid-template-columns: 1fr;
+}
+
+.feedback-area {
+    gap: 15px;
+}
+
+.note-display {
+    font-size: 2rem;
+}
+
+.controls {
+    flex-direction: column;
+    align-items: center;
+}
+
+.btn {
+    width: 100%;
+    max-width: 250px;
+}
+}
+</style>
+</file_create>

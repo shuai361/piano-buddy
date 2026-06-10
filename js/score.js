@@ -1,0 +1,227 @@
+
+/**
+
+乐谱渲染模块
+
+在Canvas上绘制简化的乐谱
+*/
+
+const ScoreRenderer = (() => {
+let canvas = null;
+let ctx = null;
+let currentNoteIndex = 0;
+let notes = [];
+let noteResults = []; // 'correct', 'wrong', 'pending'
+const COLORS = {
+    staff: '#333',
+    note: '#2D3436',
+    noteCorrect: '#51CF66',
+    noteWrong: '#FF6B6B',
+    noteCurrent: '#4ECDC4',
+    notePending: '#CCC',
+    text: '#636E72'
+};
+
+/**
+ * 初始化
+ */
+function init(canvasEl) {
+    canvas = canvasEl;
+    ctx = canvas.getContext('2d');
+    resize();
+    window.addEventListener('resize', resize);
+}
+
+function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width - 40;
+    canvas.height = 200;
+    if (notes.length > 0) render();
+}
+
+/**
+ * 加载曲谱
+ */
+function loadSong(songNotes) {
+    notes = songNotes;
+    currentNoteIndex = 0;
+    noteResults = notes.map(() => 'pending');
+    render();
+}
+
+/**
+ * 设置当前音符索引
+ */
+function setCurrentNote(index) {
+    currentNoteIndex = index;
+    render();
+}
+
+/**
+ * 标记音符结果
+ */
+function markNote(index, result) {
+    if (index >= 0 && index < noteResults.length) {
+        noteResults[index] = result;
+        render();
+    }
+}
+
+/**
+ * 渲染乐谱
+ */
+function render() {
+    if (!ctx || notes.length === 0) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const padding = 30;
+    const noteSpacing = Math.min(60, (canvas.width - padding * 2) / notes.length);
+    const staffTop = 60;
+    const staffSpacing = 15;
+
+    // 绘制五线谱
+    ctx.strokeStyle = COLORS.staff;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(padding, staffTop + i * staffSpacing);
+        ctx.lineTo(canvas.width - padding, staffTop + i * staffSpacing);
+        ctx.stroke();
+    }
+
+    // 绘制音符
+    notes.forEach((noteData, i) => {
+        const x = padding + i * noteSpacing + noteSpacing / 2;
+        const y = getNoteY(noteData.note, staffTop, staffSpacing);
+
+        // 确定音符颜色
+        let color;
+        if (i === currentNoteIndex) {
+            color = COLORS.noteCurrent;
+        } else if (noteResults[i] === 'correct') {
+            color = COLORS.noteCorrect;
+        } else if (noteResults[i] === 'wrong') {
+            color = COLORS.noteWrong;
+        } else {
+            color = COLORS.notePending;
+        }
+
+        // 绘制音符头
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 8, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 绘制符干
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (y > staffTop + 2 * staffSpacing) {
+            ctx.moveTo(x + 7, y);
+            ctx.lineTo(x + 7, y - 35);
+        } else {
+            ctx.moveTo(x - 7, y);
+            ctx.lineTo(x - 7, y + 35);
+        }
+        ctx.stroke();
+
+        // 加ledger lines如果音符超出五线谱
+        ctx.strokeStyle = COLORS.staff;
+        ctx.lineWidth = 1;
+        const staffBottom = staffTop + 4 * staffSpacing;
+        if (y > staffBottom) {
+            for (let ly = staffBottom + staffSpacing; ly <= y; ly += staffSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x - 12, ly);
+                ctx.lineTo(x + 12, ly);
+                ctx.stroke();
+            }
+        }
+        if (y < staffTop) {
+            for (let ly = staffTop - staffSpacing; ly >= y; ly -= staffSpacing) {
+                ctx.beginPath();
+                ctx.moveTo(x - 12, ly);
+                ctx.lineTo(x + 12, ly);
+                ctx.stroke();
+            }
+        }
+
+        // 当前音符高亮指示
+        if (i === currentNoteIndex) {
+            ctx.fillStyle = COLORS.noteCurrent;
+            ctx.beginPath();
+            ctx.moveTo(x - 5, staffTop + 5 * staffSpacing + 15);
+            ctx.lineTo(x + 5, staffTop + 5 * staffSpacing + 15);
+            ctx.lineTo(x, staffTop + 5 * staffSpacing + 8);
+            ctx.fill();
+        }
+
+        // 音符名称标注
+        ctx.fillStyle = COLORS.text;
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        const noteName = noteData.note.replace(/\d/, '');
+        ctx.fillText(noteName, x, canvas.height - 10);
+    });
+
+    // 绘制结果标记（对号/叉号）
+    notes.forEach((noteData, i) => {
+        const x = padding + i * noteSpacing + noteSpacing / 2;
+        if (noteResults[i] === 'correct') {
+            ctx.fillStyle = COLORS.noteCorrect;
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('✓', x, staffTop - 15);
+        } else if (noteResults[i] === 'wrong') {
+            ctx.fillStyle = COLORS.noteWrong;
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('✗', x, staffTop - 15);
+        }
+    });
+}
+
+/**
+ * 根据音符名计算在五线谱上的Y坐标
+ * 简化版：以中央C (C4) 为基准
+ */
+function getNoteY(noteName, staffTop, staffSpacing) {
+    // 音符到中央C的半步映射成五线谱位置
+    const notePositions = {
+        'C': 0, 'D': 1, 'E': 2, 'F': 3, 'G': 4, 'A': 5, 'B': 6
+    };
+
+    const match = noteName.match(/^([A-G]#?)(\d)$/);
+    if (!match) return staffTop + 2 * staffSpacing;
+
+    const note = match[1].charAt(0);
+    const octave = parseInt(match[2]);
+
+    // C4在五线谱下加一线(第6个位置从上往下数)
+    const c4Position = 10; // 从最上面的位置往下数
+    const position = c4Position - (notePositions[note] + (octave - 4) * 7);
+
+    // 每个位置是半个staffSpacing
+    return staffTop + position * (staffSpacing / 2) - staffSpacing;
+}
+
+/**
+ * 获取统计
+ */
+function getStats() {
+    const correct = noteResults.filter(r => r === 'correct').length;
+    const wrong = noteResults.filter(r => r === 'wrong').length;
+    return { correct, wrong, total: notes.length };
+}
+
+return {
+    init,
+    loadSong,
+    setCurrentNote,
+    markNote,
+    render,
+    getStats
+};
+})();
+

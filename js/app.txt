@@ -1,0 +1,318 @@
+<file_create file_path="piano-buddy/js/app.js">
+/**
+
+主应用逻辑
+
+串联所有模块，处理练习流程
+*/
+
+const App = (() => {
+let currentSong = null;
+let currentNoteIndex = 0;
+let isPlaying = false;
+let practiceStartTime = 0;
+let noteStartTime = 0;
+let results = [];
+let audioInitialized = false;
+let noteDetectionBuffer = [];
+let lastDetectedMidi = -1;
+let noteHoldCount = 0;
+// 纠错参数
+const NOTE_CONFIRM_COUNT = 3;   // 连续检测到相同音符N次确认
+const MAX_WAIT_TIME = 5000;     // 每个音符最大等待时间(ms)
+
+// AI陪伴语句
+const ENCOURAGEMENTS = [
+    '太棒了！继续加油！🎉',
+    '弹得真好听！',
+    '你的进步很大哦！',
+    '这个音弹得很准！',
+    '节奏感很好！继续保持！',
+    '小钢琴家，你真厉害！⭐',
+];
+
+const CORRECTIONS = [
+    '没关系，再试试这个音～',
+    '差一点点，注意听这个音的高低',
+    '加油！慢慢来，不着急',
+    '这个音有点不对哦，仔细听听看',
+    '没关系的，我们再来一次！',
+];
+
+const TIPS = [
+    '小提示：弹之前先在心里唱一遍旋律',
+    '放松手腕，手指自然弯曲哦',
+    '注意看谱子上的下一个音',
+    '可以先慢慢弹，熟练了再加速',
+];
+
+function init() {
+    UI.init();
+    ScoreRenderer.init(document.getElementById('score-canvas'));
+
+    // 渲染曲目列表
+    UI.renderSongList(Songs, selectSong);
+
+    // 绑定事件
+    UI.elements.btnStart.addEventListener('click', startPractice);
+    UI.elements.btnStop.addEventListener('click', stopPractice);
+    UI.elements.btnDemo.addEventListener('click', playDemo);
+    UI.elements.btnBack.addEventListener('click', goHome);
+    UI.elements.btnRetry.addEventListener('click', retryPractice);
+    UI.elements.btnHome.addEventListener('click', goHome);
+    UI.elements.btnAllowMic.addEventListener('click', initAudio);
+}
+
+function selectSong(song) {
+    currentSong = song;
+    currentNoteIndex = 0;
+    results = [];
+
+    UI.showPage('practice');
+    UI.setSongTitle(song.emoji + ' ' + song.name);
+    UI.setTempo(song.bpm);
+    UI.setProgress(0);
+    UI.setFeedback('waiting');
+    UI.setDetectedNote('--');
+    UI.setExpectedNote(song.notes[0].note);
+    UI.setChatMessage('准备好了吗？先听一遍示范，然后点"开始练习"吧！');
+    UI.showStartButton();
+
+    ScoreRenderer.loadSong(song.notes);
+}
+
+async function playDemo() {
+    if (!currentSong) return;
+    UI.setChatMessage('🎵 听好了，这首曲子是这样弹的...');
+    UI.elements.btnDemo.disabled = true;
+    
+    try {
+        const duration = await AudioEngine.playSong(currentSong);
+        setTimeout(() => {
+            UI.setChatMessage('听到了吗？现在轮到你了！点击"开始练习"吧 🎹');
+            UI.elements.btnDemo.disabled = false;
+        }, duration * 1000 + 500);
+    } catch (e) {
+        UI.elements.btnDemo.disabled = false;
+        UI.setChatMessage('播放遇到问题，不过没关系，直接开始练习吧！');
+    }
+}
+
+async function initAudio() {
+    const success = await AudioEngine.init();
+    if (success) {
+        audioInitialized = true;
+        UI.hideMicModal();
+        beginListening();
+    } else {
+        UI.setChatMessage('麦克风开启失败了，请检查浏览器权限设置 🎤');
+    }
+}
+
+async function startPractice() {
+    if (!audioInitialized) {
+        UI.showMicModal();
+        return;
+    }
+    beginListening();
+}
+
+function beginListening() {
+    isPlaying = true;
+    currentNoteIndex = 0;
+    results = [];
+    noteDetectionBuffer = [];
+    lastDetectedMidi = -1;
+    noteHoldCount = 0;
+    practiceStartTime = performance.now();
+    noteStartTime = performance.now();
+
+    UI.showStopButton();
+    UI.setProgress(0);
+    UI.setFeedback('waiting');
+    UI.setChatMessage('开始弹吧！我在听着呢 👂');
+    UI.setExpectedNote(currentSong.notes[0].note);
+
+    ScoreRenderer.loadSong(currentSong.notes);
+
+    AudioEngine.startListening(onNoteDetected);
+}
+
+function onNoteDetected(data) {
+    if (!isPlaying) return;
+
+    UI.setDetectedNote(data.noteName);
+
+    const expectedNote = currentSong.notes[currentNoteIndex];
+    const expectedMidi = Music.noteNameToMidi(expectedNote.note);
+
+    // 防抖：连续检测到相同音符才确认
+    if (data.midi === lastDetectedMidi) {
+        noteHoldCount++;
+    } else {
+        lastDetectedMidi = data.midi;
+        noteHoldCount = 1;
+    }
+
+    if (noteHoldCount >= NOTE_CONFIRM_COUNT) {
+        // 确认一个音符输入
+        const isCorrect = Music.isCorrectNote(data.midi, expectedMidi);
+        processNote(isCorrect, data);
+        noteHoldCount = 0;
+        lastDetectedMidi = -1;
+    }
+
+    // 检查超时
+    const elapsed = performance.now() - noteStartTime;
+    if (elapsed > MAX_WAIT_TIME) {
+        processNote(false, { midi: -1, noteName: '--', timestamp: performance.now() });
+    }
+}
+
+function processNote(isCorrect, data) {
+    const expectedNote = currentSong.notes[currentNoteIndex];
+    const timingDiff = performance.now() - noteStartTime;
+    const expectedDuration = (expectedNote.duration * 60 / currentSong.bpm) * 1000;
+
+    // 记录结果
+    results.push({
+        expected: expectedNote.note,
+        detected: data.noteName,
+        correct: isCorrect,
+        timingDiff: timingDiff,
+        expectedDuration: expectedDuration
+    });
+
+    // 更新UI
+    if (isCorrect) {
+        UI.setFeedback('correct');
+        ScoreRenderer.markNote(currentNoteIndex, 'correct');
+        
+        // 随机鼓励
+        if (Math.random() < 0.3) {
+            UI.setChatMessage(randomFrom(ENCOURAGEMENTS));
+        }
+    } else {
+        UI.setFeedback('wrong');
+        ScoreRenderer.markNote(currentNoteIndex, 'wrong');
+        UI.setChatMessage(randomFrom(CORRECTIONS));
+    }
+
+    // 前进到下一个音符
+    currentNoteIndex++;
+    const progress = (currentNoteIndex / currentSong.notes.length) * 100;
+    UI.setProgress(progress);
+
+    if (currentNoteIndex >= currentSong.notes.length) {
+        // 练习完成
+        finishPractice();
+    } else {
+        // 显示下一个期望音符
+        const nextNote = currentSong.notes[currentNoteIndex];
+        UI.setExpectedNote(nextNote.note);
+        ScoreRenderer.setCurrentNote(currentNoteIndex);
+        noteStartTime = performance.now();
+    }
+}
+
+function stopPractice() {
+    isPlaying = false;
+    AudioEngine.stopListening();
+    UI.showStartButton();
+    UI.setChatMessage('练习暂停了。想继续吗？点击"开始练习"继续哦！');
+}
+
+function finishPractice() {
+    isPlaying = false;
+    AudioEngine.stopListening();
+
+    // 计算成绩
+    const stats = calculateScore();
+    
+    // 奖励星星
+    let starsEarned = 0;
+    if (stats.score >= 90) starsEarned = 3;
+    else if (stats.score >= 70) starsEarned = 2;
+    else if (stats.score >= 50) starsEarned = 1;
+
+    if (starsEarned > 0) {
+        UI.addStars(starsEarned);
+    }
+
+    // 生成评语
+    let message = '';
+    if (stats.score >= 90) {
+        message = '🌟 太完美了！你是小小钢琴家！获得 ' + starsEarned + ' 颗星！';
+    } else if (stats.score >= 70) {
+        message = '👏 弹得很棒！再练练就能更好了！获得 ' + starsEarned + ' 颗星！';
+    } else if (stats.score >= 50) {
+        message = '💪 继续加油！多练几次会越来越好的！获得 ' + starsEarned + ' 颗星！';
+    } else {
+        message = '🤗 没关系，每个人都是从零开始的。再来一次吧！';
+    }
+
+    UI.showReport({
+        score: stats.score,
+        pitchAccuracy: stats.pitchAccuracy,
+        rhythmAccuracy: stats.rhythmAccuracy,
+        correctNotes: stats.correctNotes,
+        wrongNotes: stats.wrongNotes,
+        message: message
+    });
+}
+
+function calculateScore() {
+    if (results.length === 0) {
+        return { score: 0, pitchAccuracy: 0, rhythmAccuracy: 0, correctNotes: 0, wrongNotes: 0 };
+    }
+
+    const correctNotes = results.filter(r => r.correct).length;
+    const wrongNotes = results.filter(r => !r.correct).length;
+    const pitchAccuracy = Math.round((correctNotes / results.length) * 100);
+
+    // 节奏准确度：检查时间偏差
+    let rhythmScore = 0;
+    results.forEach(r => {
+        if (r.correct && r.expectedDuration > 0) {
+            const ratio = r.timingDiff / r.expectedDuration;
+            if (ratio >= 0.5 && ratio <= 2.0) {
+                rhythmScore += 1;
+            } else if (ratio >= 0.3 && ratio <= 3.0) {
+                rhythmScore += 0.5;
+            }
+        } else if (r.correct) {
+            rhythmScore += 0.7;
+        }
+    });
+    const rhythmAccuracy = Math.round((rhythmScore / results.length) * 100);
+
+    // 综合评分
+    const score = Math.round(pitchAccuracy * 0.7 + rhythmAccuracy * 0.3);
+
+    return { score, pitchAccuracy, rhythmAccuracy, correctNotes, wrongNotes };
+}
+
+function retryPractice() {
+    if (currentSong) {
+        selectSong(currentSong);
+        startPractice();
+    }
+}
+
+function goHome() {
+    isPlaying = false;
+    AudioEngine.stopListening();
+    UI.showPage('home');
+    UI.showStartButton();
+}
+
+function randomFrom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// 启动应用
+document.addEventListener('DOMContentLoaded', init);
+
+return { init };
+})();
+</file_create>

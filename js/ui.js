@@ -1,0 +1,183 @@
+
+/**
+
+UI管理模块
+*/
+
+const UI = (() => {
+const pages = {};
+const elements = {};
+function init() {
+    // 缓存DOM元素
+    pages.home = document.getElementById('page-home');
+    pages.practice = document.getElementById('page-practice');
+    pages.report = document.getElementById('page-report');
+
+    elements.songList = document.getElementById('song-list');
+    elements.songTitle = document.getElementById('song-title');
+    elements.detectedNote = document.getElementById('detected-note');
+    elements.expectedNote = document.getElementById('expected-note');
+    elements.feedbackIcon = document.getElementById('feedback-icon');
+    elements.progressFill = document.getElementById('progress-fill');
+    elements.chatText = document.getElementById('chat-text');
+    elements.starCount = document.getElementById('star-count');
+    elements.tempoValue = document.getElementById('tempo-value');
+
+    elements.btnStart = document.getElementById('btn-start');
+    elements.btnStop = document.getElementById('btn-stop');
+    elements.btnDemo = document.getElementById('btn-demo');
+    elements.btnBack = document.getElementById('btn-back');
+    elements.btnRetry = document.getElementById('btn-retry');
+    elements.btnHome = document.getElementById('btn-home');
+    elements.micModal = document.getElementById('mic-modal');
+    elements.btnAllowMic = document.getElementById('btn-allow-mic');
+
+    // 加载星星数
+    const savedStars = localStorage.getItem('piano-buddy-stars');
+    if (savedStars) {
+        elements.starCount.textContent = savedStars;
+    }
+}
+
+function showPage(pageName) {
+    Object.values(pages).forEach(p => p.classList.remove('active'));
+    if (pages[pageName]) {
+        pages[pageName].classList.add('active');
+    }
+}
+
+function renderSongList(songs, onSelect) {
+    elements.songList.innerHTML = '';
+    songs.forEach(song => {
+        const card = document.createElement('div');
+        card.className = 'song-card';
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', `选择曲目：${song.name}，难度${song.difficulty}星`);
+        card.innerHTML = `
+            <div class="song-emoji">${song.emoji}</div>
+            <div class="song-name">${song.name}</div>
+            <div class="song-difficulty">
+                <span class="difficulty-stars">${'⭐'.repeat(song.difficulty)}${'☆'.repeat(3 - song.difficulty)}</span>
+            </div>
+            <div class="song-desc" style="font-size:0.85rem;color:#636E72;margin-top:4px;">${song.description}</div>
+        `;
+        card.addEventListener('click', () => onSelect(song));
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelect(song);
+            }
+        });
+        elements.songList.appendChild(card);
+    });
+}
+
+function setSongTitle(title) {
+    elements.songTitle.textContent = title;
+}
+
+function setDetectedNote(noteName) {
+    elements.detectedNote.textContent = noteName || '--';
+}
+
+function setExpectedNote(noteName) {
+    elements.expectedNote.textContent = noteName || '--';
+}
+
+function setFeedback(type) {
+    const icon = elements.feedbackIcon;
+    icon.className = 'feedback-icon';
+    
+    switch(type) {
+        case 'correct':
+            icon.textContent = '✅';
+            icon.classList.add('correct');
+            break;
+        case 'wrong':
+            icon.textContent = '❌';
+            icon.classList.add('wrong');
+            break;
+        case 'waiting':
+            icon.textContent = '🎵';
+            break;
+        default:
+            icon.textContent = '🎵';
+    }
+}
+
+function setProgress(percent) {
+    elements.progressFill.style.width = Math.min(100, percent) + '%';
+}
+
+function setChatMessage(text) {
+    elements.chatText.textContent = text;
+}
+
+function setTempo(bpm) {
+    elements.tempoValue.textContent = bpm;
+}
+
+function showStartButton() {
+    elements.btnStart.style.display = 'inline-block';
+    elements.btnStop.style.display = 'none';
+}
+
+function showStopButton() {
+    elements.btnStart.style.display = 'none';
+    elements.btnStop.style.display = 'inline-block';
+}
+
+function showMicModal() {
+    elements.micModal.style.display = 'flex';
+}
+
+function hideMicModal() {
+    elements.micModal.style.display = 'none';
+}
+
+function addStars(count) {
+    const current = parseInt(elements.starCount.textContent) || 0;
+    const newCount = current + count;
+    elements.starCount.textContent = newCount;
+    localStorage.setItem('piano-buddy-stars', newCount);
+}
+
+function showReport(data) {
+    document.getElementById('score-number').textContent = data.score;
+    document.getElementById('report-pitch').textContent = data.pitchAccuracy + '%';
+    document.getElementById('report-rhythm').textContent = data.rhythmAccuracy + '%';
+    document.getElementById('report-correct').textContent = data.correctNotes;
+    document.getElementById('report-wrong').textContent = data.wrongNotes;
+    document.getElementById('report-message').textContent = data.message;
+
+    // 根据分数设置表情
+    const mascot = document.getElementById('report-mascot');
+    if (data.score >= 90) mascot.textContent = '🎉';
+    else if (data.score >= 70) mascot.textContent = '😊';
+    else if (data.score >= 50) mascot.textContent = '💪';
+    else mascot.textContent = '🤗';
+
+    showPage('report');
+}
+
+return {
+    init,
+    showPage,
+    renderSongList,
+    setSongTitle,
+    setDetectedNote,
+    setExpectedNote,
+    setFeedback,
+    setProgress,
+    setChatMessage,
+    setTempo,
+    showStartButton,
+    showStopButton,
+    showMicModal,
+    hideMicModal,
+    addStars,
+    showReport,
+    elements
+};
+})();
